@@ -59,7 +59,7 @@ class APIManagerTest(TestSupport):
 
         # make a request on the API
         #client = app.test_client()
-        response = self.app.get('/api/person')
+        response = self.app.getj('/api/person')
         self.assertEqual(response.status_code, 200)
 
     def test_create_api(self):
@@ -76,39 +76,39 @@ class APIManagerTest(TestSupport):
                                 url_prefix='/readonly')
 
         # test that specified endpoints exist
-        response = self.app.post('/api/person', data=dumps(dict(name='foo')))
+        response = self.app.postj('/api/person', data=dumps(dict(name='foo')))
         self.assertEqual(response.status_code, 201)
         self.assertEqual(loads(response.data)['id'], 1)
-        response = self.app.get('/api/person')
+        response = self.app.getj('/api/person')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(loads(response.data)['objects']), 1)
         self.assertEqual(loads(response.data)['objects'][0]['id'], 1)
 
         # test that non-specified methods are not allowed
-        response = self.app.delete('/api/person/1')
+        response = self.app.deletej('/api/person/1')
         self.assertEqual(response.status_code, 405)
-        response = self.app.patch('/api/person/1',
+        response = self.app.patchj('/api/person/1',
                                   data=dumps(dict(name='bar')))
         self.assertEqual(response.status_code, 405)
 
         # test that specified endpoints exist
-        response = self.app.patch('/api2/person/1',
+        response = self.app.patchj('/api2/person/1',
                                   data=dumps(dict(name='bar')))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(loads(response.data)['id'], 1)
         self.assertEqual(loads(response.data)['name'], 'bar')
 
         # test that non-specified methods are not allowed
-        response = self.app.get('/api2/person/1')
+        response = self.app.getj('/api2/person/1')
         self.assertEqual(response.status_code, 405)
-        response = self.app.delete('/api2/person/1')
+        response = self.app.deletej('/api2/person/1')
         self.assertEqual(response.status_code, 405)
-        response = self.app.post('/api2/person',
+        response = self.app.postj('/api2/person',
                                  data=dumps(dict(name='baz')))
         self.assertEqual(response.status_code, 405)
 
         # test that the model is the same as before
-        response = self.app.get('/readonly/person')
+        response = self.app.getj('/readonly/person')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(loads(response.data)['objects']), 1)
         self.assertEqual(loads(response.data)['objects'][0]['id'], 1)
@@ -122,16 +122,16 @@ class APIManagerTest(TestSupport):
         self.manager.create_api(self.Person, methods=['POST', 'GET'],
                                 collection_name='people')
 
-        response = self.app.post('/api/people', data=dumps(dict(name='foo')))
+        response = self.app.postj('/api/people', data=dumps(dict(name='foo')))
         self.assertEqual(response.status_code, 201)
         self.assertEqual(loads(response.data)['id'], 1)
 
-        response = self.app.get('/api/people')
+        response = self.app.getj('/api/people')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(loads(response.data)['objects']), 1)
         self.assertEqual(loads(response.data)['objects'][0]['id'], 1)
 
-        response = self.app.get('/api/people/1')
+        response = self.app.getj('/api/people/1')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(loads(response.data)['id'], 1)
 
@@ -141,8 +141,7 @@ class APIManagerTest(TestSupport):
 
         """
         self.manager.create_api(self.Person, allow_functions=True)
-        response = self.app.get('/api/eval/person?q={}')
-        self.assertNotEqual(response.status_code, 400)
+        response = self.app.getj('/api/eval/person?q={}')
         self.assertEqual(response.status_code, 204)
 
     def test_disallow_functions(self):
@@ -151,7 +150,7 @@ class APIManagerTest(TestSupport):
 
         """
         self.manager.create_api(self.Person, allow_functions=False)
-        response = self.app.get('/api/eval/person')
+        response = self.app.getj('/api/eval/person')
         self.assertNotEqual(response.status_code, 200)
         self.assertEqual(response.status_code, 404)
 
@@ -171,7 +170,7 @@ class APIManagerTest(TestSupport):
         self.manager.create_api(self.Person, url_prefix='/api2',
                                 include_columns=include)
 
-        response = self.app.get('/api/person/%s' % person.id)
+        response = self.app.getj('/api/person/%s' % person.id)
         person_dict = loads(response.data)
         for column in 'name', 'age', 'computers':
             self.assertIn(column, person_dict)
@@ -324,60 +323,62 @@ class APIManagerTest(TestSupport):
                                     url_prefix=url)
 
         # test for correct requests
-        response = self.app.get('/get/person')
+        response = self.app.getj('/get/person')
         self.assertEqual(response.status_code, 200)
-        response = self.app.post('/post/person', data=dumps(dict(name='Test')))
+        response = self.app.postj('/post/person',
+                                  data=dumps(dict(name='Test')))
         self.assertEqual(response.status_code, 201)
-        response = self.app.patch('/patch/person/1',
-                                  data=dumps(dict(name='foo')))
+        response = self.app.patchj('/patch/person/1',
+                                   data=dumps(dict(name='foo')))
         self.assertEqual(response.status_code, 200)
-        response = self.app.delete('/delete/person/1')
+        response = self.app.deletej('/delete/person/1')
         self.assertEqual(response.status_code, 204)
 
         # test for incorrect requests
-        response = self.app.get('/post/person')
+        response = self.app.getj('/post/person')
         self.assertEqual(response.status_code, 405)
-        response = self.app.get('/patch/person/1')
+        response = self.app.getj('/patch/person/1')
         self.assertEqual(response.status_code, 405)
-        response = self.app.get('/delete/person/1')
-        self.assertEqual(response.status_code, 405)
-
-        response = self.app.post('/get/person')
-        self.assertEqual(response.status_code, 405)
-        response = self.app.post('/patch/person/1')
-        self.assertEqual(response.status_code, 405)
-        response = self.app.post('/delete/person/1')
+        response = self.app.getj('/delete/person/1')
         self.assertEqual(response.status_code, 405)
 
-        response = self.app.patch('/get/person')
+        response = self.app.postj('/get/person')
         self.assertEqual(response.status_code, 405)
-        response = self.app.patch('/post/person')
+        response = self.app.postj('/patch/person/1')
         self.assertEqual(response.status_code, 405)
-        response = self.app.patch('/delete/person/1')
+        response = self.app.postj('/delete/person/1')
         self.assertEqual(response.status_code, 405)
 
-        response = self.app.delete('/get/person')
+        response = self.app.patchj('/get/person')
         self.assertEqual(response.status_code, 405)
-        response = self.app.delete('/post/person')
+        response = self.app.patchj('/post/person')
         self.assertEqual(response.status_code, 405)
-        response = self.app.delete('/patch/person/1')
+        response = self.app.patchj('/delete/person/1')
+        self.assertEqual(response.status_code, 405)
+
+        response = self.app.deletej('/get/person')
+        self.assertEqual(response.status_code, 405)
+        response = self.app.deletej('/post/person')
+        self.assertEqual(response.status_code, 405)
+        response = self.app.deletej('/patch/person/1')
         self.assertEqual(response.status_code, 405)
 
         # test that the same model is updated on all URLs
-        response = self.app.post('/post/person', data=dumps(dict(name='Test')))
+        response = self.app.postj('/post/person',
+                                  data=dumps(dict(name='Test')))
         self.assertEqual(response.status_code, 201)
-        response = self.app.get('/get/person/1')
+        response = self.app.getj('/get/person/1')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(loads(response.data)['name'], 'Test')
-        response = self.app.patch('/patch/person/1',
-                                  data=dumps(dict(name='Foo')))
+        response = self.app.patchj('/patch/person/1',
+                                   data=dumps(dict(name='Foo')))
         self.assertEqual(response.status_code, 200)
-        response = self.app.get('/get/person/1')
+        response = self.app.getj('/get/person/1')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(loads(response.data)['name'], 'Foo')
-        response = self.app.delete('/delete/person/1')
+        response = self.app.deletej('/delete/person/1')
         self.assertEqual(response.status_code, 204)
-        response = self.app.get('/get/person/1')
+        response = self.app.getj('/get/person/1')
         self.assertEqual(response.status_code, 404)
 
     def test_max_results_per_page(self):
@@ -387,9 +388,9 @@ class APIManagerTest(TestSupport):
         self.manager.create_api(self.Person, methods=['GET', 'POST'],
                                 max_results_per_page=15)
         for n in range(100):
-            response = self.app.post('/api/person', data=dumps({}))
+            response = self.app.postj('/api/person', data=dumps({}))
             self.assertEqual(201, response.status_code)
-        response = self.app.get('/api/person?results_per_page=20')
+        response = self.app.getj('/api/person?results_per_page=20')
         self.assertEqual(200, response.status_code)
         data = loads(response.data)
         self.assertEqual(15, len(data['objects']))
@@ -407,7 +408,7 @@ class APIManagerTest(TestSupport):
         self.session.commit()
 
         self.manager.create_api(self.Person)
-        response = self.app.get('/api/person/1/computers')
+        response = self.app.getj('/api/person/1/computers')
         self.assertEqual(200, response.status_code)
         data = loads(response.data)
         self.assertIn('objects', data)
@@ -495,21 +496,21 @@ class FSATest(FlaskTestBase):
                                 url_prefix='/readonly')
 
         # test that specified endpoints exist
-        response = self.app.post('/api/person', data=dumps(dict(name='foo')))
+        response = self.app.postj('/api/person', data=dumps(dict(name='foo')))
         self.assertEqual(response.status_code, 201)
         self.assertEqual(loads(response.data)['id'], 1)
-        response = self.app.get('/api/person')
+        response = self.app.getj('/api/person')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(loads(response.data)['objects']), 1)
         self.assertEqual(loads(response.data)['objects'][0]['id'], 1)
-        response = self.app.patch('/api2/person/1',
-                                  data=dumps(dict(name='bar')))
+        response = self.app.patchj('/api2/person/1',
+                                   data=dumps(dict(name='bar')))
         self.assertEqual(response.status_code, 200)
         self.assertEqual(loads(response.data)['id'], 1)
         self.assertEqual(loads(response.data)['name'], 'bar')
 
         # test that the model is the same as before
-        response = self.app.get('/readonly/person')
+        response = self.app.getj('/readonly/person')
         self.assertEqual(response.status_code, 200)
         self.assertEqual(len(loads(response.data)['objects']), 1)
         self.assertEqual(loads(response.data)['objects'][0]['id'], 1)

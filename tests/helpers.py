@@ -30,6 +30,35 @@ from sqlalchemy.orm import sessionmaker
 from flask.ext.restless import APIManager
 
 
+def add_json_methods(client):
+    """Adds ``getj``, ``postj``, ``patchj``, ``putj``, and ``deletej`` methods
+    to the specified test client which act the same as their non-``j``
+    counterparts, except the content type of the request is forced to
+    :mimetype:`application/json`.
+
+    """
+    def getj(*args, **kw):
+        kw['content_type'] = 'application/json'
+        return client.get(*args, **kw)
+    def putj(*args, **kw):
+        kw['content_type'] = 'application/json'
+        return client.put(*args, **kw)
+    def patchj(*args, **kw):
+        kw['content_type'] = 'application/json'
+        return client.patch(*args, **kw)
+    def deletej(*args, **kw):
+        kw['content_type'] = 'application/json'
+        return client.delete(*args, **kw)
+    def postj(*args, **kw):
+        kw['content_type'] = 'application/json'
+        return client.post(*args, **kw)
+    client.getj = getj
+    client.putj = putj
+    client.postj = postj
+    client.patchj = patchj
+    client.deletej = deletej
+
+
 class FlaskTestBase(TestCase):
     """Base class for tests which use a Flask application.
 
@@ -51,6 +80,10 @@ class FlaskTestBase(TestCase):
 
         # create the test client
         self.app = app.test_client()
+        add_json_methods(self.app)
+
+        # add JSON request methods
+        add_json_methods(self.app)
 
 
 class DatabaseTestBase(FlaskTestBase):

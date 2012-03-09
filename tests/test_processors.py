@@ -36,7 +36,7 @@ class ProcessorsTest(TestSupport):
         super(ProcessorsTest, self).setUp()
 
         # to facilitate searching
-        self.app.search = lambda url, q: self.app.get(url + '?q=%s' % q)
+        self.app.search = lambda url, q: self.app.getj(url + '?q=%s' % q)
 
     def test_get_single_preprocessor(self):
         """Tests :http:method:`get` requests for a single object with
@@ -51,9 +51,9 @@ class ProcessorsTest(TestSupport):
         pre = dict(GET_SINGLE=[check_permissions])
         self.manager.create_api(self.Person, methods=['GET', 'POST'],
                                 preprocessors=pre)
-        response = self.app.post('/api/person', data=dumps({'name': u'test'}))
+        response = self.app.postj('/api/person', data=dumps({'name': u'test'}))
         self.assertEqual(201, response.status_code)
-        response = self.app.get('/api/person/1')
+        response = self.app.getj('/api/person/1')
         self.assertEqual(response.status_code, 403)
 
     def test_get_many_preprocessor(self):
@@ -69,14 +69,14 @@ class ProcessorsTest(TestSupport):
         self.manager.create_api(self.Person, methods=['GET', 'POST'],
                                 preprocessors=pre)
 
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lincoln', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lucy', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Mary', 'age': 25}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lincoln', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lucy', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Mary', 'age': 25}))
 
-        response = self.app.get('/api/person')
+        response = self.app.getj('/api/person')
         objs = loads(response.data)['objects']
         ids = [obj['id'] for obj in objs]
         self.assertEqual(ids, [1, 3])
@@ -108,16 +108,16 @@ class ProcessorsTest(TestSupport):
                                 url_prefix='/api/v3',
                                 preprocessors=dict(POST=[check_permissions]))
 
-        response = self.app.post('/api/v2/person',
-                                 data=dumps({'name': u'Lincoln', 'age': 23}))
+        response = self.app.postj('/api/v2/person',
+                                  data=dumps({'name': u'Lincoln', 'age': 23}))
         self.assertEqual(response.status_code, 201)
 
         personid = loads(response.data)['id']
         person = self.session.query(self.Person).filter_by(id=personid).first()
         self.assertEquals(person.other, 7)
 
-        response = self.app.post('/api/v3/person',
-                                 data=dumps({'name': u'Lincoln', 'age': 23}))
+        response = self.app.postj('/api/v3/person',
+                                  data=dumps({'name': u'Lincoln', 'age': 23}))
         self.assertEqual(response.status_code, 403)
 
     def test_delete_preprocessor(self):
@@ -135,15 +135,15 @@ class ProcessorsTest(TestSupport):
                                 preprocessors=pre)
 
         # Creating some people
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lincoln', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lucy', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Mary', 'age': 25}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lincoln', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lucy', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Mary', 'age': 25}))
 
         # Try deleting it
-        response = self.app.delete('/api/person/1')
+        response = self.app.deletej('/api/person/1')
         self.assertEqual(response.status_code, 403)
 
         # Making sure it has been not deleted
@@ -166,15 +166,15 @@ class ProcessorsTest(TestSupport):
                                 preprocessors=pre)
 
         # Creating some test people
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lincoln', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lucy', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Mary', 'age': 25}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lincoln', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lucy', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Mary', 'age': 25}))
 
         # Try updating people with id=1
-        response = self.app.patch('/api/person/1', data=dumps({'age': 27}))
+        response = self.app.patchj('/api/person/1', data=dumps({'age': 27}))
         self.assertEqual(response.status_code, 403)
 
     def test_patch_single_preprocessor2(self):
@@ -193,18 +193,18 @@ class ProcessorsTest(TestSupport):
                                 preprocessors=pre)
 
         # Creating some test people
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lincoln', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lucy', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Mary', 'age': 25}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lincoln', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lucy', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Mary', 'age': 25}))
 
         # Try updating people with id=1
-        response = self.app.patch('/api/person/1', data=dumps({'age': 27}))
+        response = self.app.patchj('/api/person/1', data=dumps({'age': 27}))
         self.assertEqual(response.status_code, 200)
 
-        resp = self.app.get('/api/person/1')
+        resp = self.app.getj('/api/person/1')
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(loads(resp.data)['age'], 27)
         self.assertEqual(loads(resp.data)['other'], 27)
@@ -226,21 +226,21 @@ class ProcessorsTest(TestSupport):
                                 preprocessors=pre)
 
         # Creating some people
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lincoln', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Lucy', 'age': 23}))
-        self.app.post('/api/person',
-                      data=dumps({'name': u'Mary', 'age': 25}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lincoln', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Lucy', 'age': 23}))
+        self.app.postj('/api/person',
+                       data=dumps({'name': u'Mary', 'age': 25}))
 
         # Changing the birth date field of the entire collection
         day, month, year = 15, 9, 1986
         birth_date = date(year, month, day).strftime('%d/%m/%Y')  # iso8601
         form = {'birth_date': birth_date}
-        response = self.app.patch('/api/person', data=dumps(form))
+        response = self.app.patchj('/api/person', data=dumps(form))
 
         # Finally, testing if the change was made
-        response = self.app.get('/api/person')
+        response = self.app.getj('/api/person')
         loaded = loads(response.data)['objects']
         for i in loaded:
             self.assertEqual(i['birth_date'], ('%s-%s-%s' % (

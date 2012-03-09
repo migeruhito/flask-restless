@@ -103,7 +103,7 @@ class SimpleValidationTest(TestSupport):
         """Test SQLAlchemy's built-in simple validations."""
         # test posting a person with a badly formatted email field
         person = dict(name='Jeffrey', email='bogus!!!email', age=1)
-        response = self.app.post('/api/test', data=dumps(person))
+        response = self.app.postj('/api/test', data=dumps(person))
         self.assertEqual(response.status_code, 400)
         data = loads(response.data)
         self.assertIn('validation_errors', data)
@@ -113,14 +113,14 @@ class SimpleValidationTest(TestSupport):
 
         # posting a new person with valid email format should be fine
         person = dict(name='John', email='foo@example.com', age=1)
-        response = self.app.post('/api/test', data=dumps(person))
+        response = self.app.postj('/api/test', data=dumps(person))
         self.assertEqual(response.status_code, 201)
         personid = loads(response.data)['id']
 
         # test patching a person to with badly formatted data
         person = dict(name='Jeffrey', email='bogus!!!email', age=24)
-        response = self.app.patch('/api/test/' + str(personid),
-                                  data=dumps(person))
+        response = self.app.patchj('/api/test/' + str(personid),
+                                   data=dumps(person))
         data = loads(response.data)
         self.assertIn('validation_errors', data)
         errors = data['validation_errors']
@@ -129,7 +129,7 @@ class SimpleValidationTest(TestSupport):
 
         # patching a person with correctly formatted fields should be fine
         person = dict(email='foo@example.com')
-        response = self.app.patch('/api/test/' + str(personid),
+        response = self.app.patchj('/api/test/' + str(personid),
                                   data=dumps(person))
         data = loads(response.data)
         if 'validation_errors' in data and \
@@ -172,7 +172,7 @@ class SAVTest(TestSupport):
         """
         # test posting a person with a badly formatted email field
         person = dict(name='Jeffrey', email='bogus!!!email', age=1)
-        response = self.app.post('/api/test', data=dumps(person))
+        response = self.app.postj('/api/test', data=dumps(person))
         self.assertEqual(response.status_code, 400)
         data = loads(response.data)
         self.assertIn('validation_errors', data)
@@ -182,14 +182,14 @@ class SAVTest(TestSupport):
 
         # posting a new person with valid email format should be fine
         person = dict(name='John', email='foo@example.com', age=1)
-        response = self.app.post('/api/test', data=dumps(person))
+        response = self.app.postj('/api/test', data=dumps(person))
         self.assertEqual(response.status_code, 201)
         personid = loads(response.data)['id']
 
         # test patching a person to with badly formatted data
         person = dict(name='Jeffrey', email='bogus!!!email', age=24)
-        response = self.app.patch('/api/test/' + str(personid),
-                                  data=dumps(person))
+        response = self.app.patchj('/api/test/' + str(personid),
+                                   data=dumps(person))
         self.assertIn('validation_errors', data)
         errors = data['validation_errors']
         self.assertIn('email', errors)
@@ -197,8 +197,8 @@ class SAVTest(TestSupport):
 
         # patching a person with correctly formatted fields should be fine
         person = dict(email='foo@example.com')
-        response = self.app.patch('/api/test/' + str(personid),
-                                  data=dumps(person))
+        response = self.app.patchj('/api/test/' + str(personid),
+                                   data=dumps(person))
         data = loads(response.data)
         if 'validation_errors' in data and \
                 'email' in data['validation_errors']:
@@ -211,7 +211,7 @@ class SAVTest(TestSupport):
         """
         # missing required name field
         person = dict(email='example@example.com')
-        response = self.app.post('/api/test', data=dumps(person))
+        response = self.app.postj('/api/test', data=dumps(person))
         self.assertEqual(response.status_code, 400)
         data = loads(response.data)
         self.assertIn('validation_errors', data)
@@ -221,7 +221,7 @@ class SAVTest(TestSupport):
 
         # missing required email field
         person = dict(name='Jeffrey')
-        response = self.app.post('/api/test', data=dumps(person))
+        response = self.app.postj('/api/test', data=dumps(person))
         self.assertEqual(response.status_code, 400)
         data = loads(response.data)
         self.assertIn('validation_errors', data)
@@ -231,12 +231,12 @@ class SAVTest(TestSupport):
 
         # everything required is now provided
         person = dict(name='Jeffrey', email='example@example.com', age=24)
-        response = self.app.post('/api/test', data=dumps(person))
+        response = self.app.postj('/api/test', data=dumps(person))
         self.assertEqual(response.status_code, 201)
         personid = loads(response.data)['id']
 
         # check that the provided field values are in there
-        response = self.app.get('/api/test/' + str(personid))
+        response = self.app.getj('/api/test/' + str(personid))
         self.assertEqual(response.status_code, 200)
         data = loads(response.data)
         self.assertEqual(data['name'], 'Jeffrey')
