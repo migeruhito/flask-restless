@@ -83,18 +83,6 @@ class ProcessingException(Exception):
         self.status_code = status_code
 
 
-def jsonify_status_code(status_code, *args, **kw):
-    """Returns a jsonified response with the specified HTTP status code.
-
-    The positional and keyword arguments are passed directly to the
-    :func:`flask.jsonify` function which creates the response.
-
-    """
-    response = jsonify(*args, **kw)
-    response.status_code = status_code
-    return response
-
-
 def jsonpify(*args, **kw):
     """Passes the specified arguments directly to :func:`flask.jsonify`, then
     wraps the response with the name of a JSON-P callback function specified as
@@ -365,19 +353,19 @@ class FunctionAPI(ModelView):
         try:
             data = json.loads(request.args.get('q')) or {}
         except (TypeError, ValueError, OverflowError):
-            return jsonify_status_code(400, message='Unable to decode data')
+            return jsonify(message='Unable to decode data'), 400
         try:
             result = _evaluate_functions(self.session, self.model,
                                          data.get('functions'))
             if not result:
-                return jsonify_status_code(204)
+                return jsonpify(), 204
             return jsonpify(result)
         except AttributeError, exception:
             message = 'No such field "%s"' % exception.field
-            return jsonify_status_code(400, message=message)
+            return jsonify(message=message), 400
         except OperationalError, exception:
             message = 'No such function "%s"' % exception.function
-            return jsonify_status_code(400, message=message)
+            return jsonify(message=message), 400
 
 
 class API(ModelView):
@@ -677,7 +665,7 @@ class API(ModelView):
         self.session.rollback()
         errors = self._extract_error_messages(exception) or \
             'Could not determine specific validation errors'
-        return jsonify_status_code(400, validation_errors=errors)
+        return jsonify(validation_errors=errors), 400
 
     def _extract_error_messages(self, exception):
         """Tries to extract a dictionary mapping field name to validation error
@@ -807,7 +795,7 @@ class API(ModelView):
         try:
             data = json.loads(request.args.get('q', '{}'))
         except (TypeError, ValueError, OverflowError):
-            return jsonify_status_code(400, message='Unable to decode data')
+            return jsonify(message='Unable to decode data'), 400
 
         # exceptions are caught by the get() method, which calls this one
         for preprocessor in self.preprocessors['GET_MANY']:
@@ -821,8 +809,7 @@ class API(ModelView):
         except MultipleResultsFound:
             return jsonify(message='Multiple results found')
         except:
-            return jsonify_status_code(400,
-                                       message='Unable to construct query')
+            return jsonify(message='Unable to construct query'), 400
 
         # create a placeholder for the relations of the returned models
         relations = frozenset(get_relations(self.model))
@@ -955,8 +942,7 @@ class API(ModelView):
                 result = postprocessor(result)
             return jsonpify(result)
         except ProcessingException, e:
-            return jsonify_status_code(status_code=e.status_code,
-                                       message=e.message)
+            return jsonify(message=e.message), e.status_code
 
     def delete(self, instid):
         """Removes the specified instance of the model with the specified name
@@ -972,8 +958,7 @@ class API(ModelView):
             for preprocessor in self.preprocessors['DELETE']:
                 preprocessor(instid)
         except ProcessingException, e:
-            return jsonify_status_code(status_code=e.status_code,
-                                       message=e.message)
+            return jsonify(message=e.message), e.status_code
 
         inst = self._get_by(instid)
         if inst is not None:
@@ -984,10 +969,9 @@ class API(ModelView):
             for postprocessor in self.postprocessors['DELETE']:
                 postprocessor(is_deleted)
         except ProcessingException, e:
-            return jsonify_status_code(status_code=e.status_code,
-                                       message=e.message)
+            return jsonify(message=e.message), e.status_code
 
-        return jsonify_status_code(204)
+        return jsonify(), 204
 
     def post(self):
         """Creates a new instance of a given model based on request data.
@@ -1013,22 +997,21 @@ class API(ModelView):
         try:
             params = json.loads(request.data)
         except (TypeError, ValueError, OverflowError):
-            return jsonify_status_code(400, message='Unable to decode data')
+            return jsonify(message='Unable to decode data'), 400
 
         # apply any preprocessors to the POST arguments
         try:
             for preprocessor in self.preprocessors['POST']:
                 params = preprocessor(params)
         except ProcessingException, e:
-            return jsonify_status_code(status_code=e.status_code,
-                                       message=e.message)
+            return jsonify(message=e.message), e.status_code
 
         # Check for any request parameter naming a column which does not exist
         # on the current model.
         for field in params:
             if not hasattr(self.model, field):
                 msg = "Model does not have field '%s'" % field
-                return jsonify_status_code(400, message=msg)
+                return jsonify(message=msg), 400
 
         # Getting the list of relations that will be added later
         cols = get_columns(self.model)
@@ -1078,14 +1061,13 @@ class API(ModelView):
                 for postprocessor in self.postprocessors['POST']:
                     result = postprocessor(result)
             except ProcessingException, e:
-                return jsonify_status_code(status_code=e.status_code,
-                                           message=e.message)
+                return jsonify(message=e.message), e.status_code
 
-            return jsonify_status_code(201, **result)
+            return jsonify(**result), 201
         except self.validation_exceptions, exception:
             return self._handle_validation_exception(exception)
         except IntegrityError, error:
-            return jsonify_status_code(400, message=error.message)
+            return jsonify(message=error.message), 400
 
     def patch(self, instid):
         """Updates the instance specified by ``instid`` of the named model, or
@@ -1108,7 +1090,7 @@ class API(ModelView):
             data = json.loads(request.data)
         except (TypeError, ValueError, OverflowError):
             # this also happens when request.data is empty
-            return jsonify_status_code(400, message='Unable to decode data')
+            return jsonify(message='Unable to decode data'), 400
         # Check if the request is to patch many instances of the current model.
         patchmany = instid is None
         # Perform any necessary preprocessing.
@@ -1120,30 +1102,26 @@ class API(ModelView):
                 for preprocessor in self.preprocessors['PATCH_MANY']:
                     search_params, data = preprocessor(search_params, data)
             except ProcessingException, e:
-                return jsonify_status_code(status_code=e.status_code,
-                                           message=e.message)
+                return jsonify(message=e.message), e.status_code
         else:
             try:
                 for preprocessor in self.preprocessors['PATCH_SINGLE']:
                     data = preprocessor(instid, data)
             except ProcessingException, e:
-                return jsonify_status_code(status_code=e.status_code,
-                                           message=e.message)
+                return jsonify(message=e.message), e.status_code
 
         # Check for any request parameter naming a column which does not exist
         # on the current model.
         for field in data:
             if not hasattr(self.model, field):
                 msg = "Model does not have field '%s'" % field
-                return jsonify_status_code(400, message=msg)
-
+                return jsonify(message=msg), 400
         if patchmany:
             try:
                 # create a SQLALchemy Query from the query parameter `q`
                 query = create_query(self.session, self.model, search_params)
             except:
-                return jsonify_status_code(400,
-                                           message='Unable to construct query')
+                return jsonify(message='Unable to construct query'), 400
         else:
             # create a SQLAlchemy Query which has exactly the specified row
             query = self._query_by_primary_key(instid)
@@ -1178,16 +1156,14 @@ class API(ModelView):
                 for postprocessor in self.postprocessors['PATCH_MANY']:
                     result = postprocessor(query, result)
             except ProcessingException, e:
-                return jsonify_status_code(status_code=e.status_code,
-                                           message=e.message)
+                return jsonify(message=e.message), e.status_code
         else:
             result = self._inst_to_dict(instid)
             try:
                 for postprocessor in self.postprocessors['PATCH_SINGLE']:
                     result = postprocessor(result)
             except ProcessingException, e:
-                return jsonify_status_code(status_code=e.status_code,
-                                           message=e.message)
+                return jsonify(message=e.message), e.status_code
 
         return jsonify(result)
 
