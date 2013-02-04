@@ -15,6 +15,10 @@ Not yet released.
 
 - #113: interpret empty strings for date fields as ``None`` objects.
 - #135: added support for hybrid properties.
+- #60: Added the ``hide_endpoints`` keyword argument to
+  :meth:`APIManager.create_api_blueprint` to hide disallowed HTTP methods
+  behind a :http:statuscode:`404` response instead of a :http:statuscode:`405`
+  response.
 
 Version 0.9.3
 -------------
