@@ -44,7 +44,7 @@ from sqlalchemy.orm import class_mapper
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.orm import object_mapper
 from sqlalchemy.orm import RelationshipProperty
-from sqlalchemy.orm.exc import MultipleResultsFound
+from sqlalchemy.orm.exc import MultipleResultsFound, UnmappedInstanceError
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import func
@@ -198,8 +198,12 @@ def _to_dict(instance, deep=None):
 
     """
     # create a list of names of columns, including hybrid properties
-    columns = [p.key for p in object_mapper(instance).iterate_properties
-            if isinstance(p, ColumnProperty)]
+    try:
+        columns = [p.key for p in object_mapper(instance).iterate_properties
+                if isinstance(p, ColumnProperty)]
+    except UnmappedInstanceError:
+        return instance
+
     for parent in type(instance).mro():
         columns.extend(
             [key for key,value in parent.__dict__.iteritems()
