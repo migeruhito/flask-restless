@@ -44,8 +44,9 @@ from sqlalchemy.orm import class_mapper
 from sqlalchemy.orm import ColumnProperty
 from sqlalchemy.orm import object_mapper
 from sqlalchemy.orm import RelationshipProperty
-from sqlalchemy.orm.exc import MultipleResultsFound, UnmappedInstanceError
+from sqlalchemy.orm.exc import MultipleResultsFound
 from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.orm.exc import UnmappedInstanceError
 from sqlalchemy.orm.query import Query
 from sqlalchemy.sql import func
 from sqlalchemy.ext.hybrid import hybrid_property
