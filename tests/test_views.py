@@ -1308,6 +1308,7 @@ class AssociationProxyTest(DatabaseTestBase):
 
         class ChosenProductImage(self.Base):
             __tablename__ = 'chosen_product_image'
+            number = Column(Integer, default=lambda: u'foo')
             product_id = Column(Integer, ForeignKey('product.id'),
                                 primary_key=True)
             image_id = Column(Integer, ForeignKey('image.id'),
@@ -1322,6 +1323,7 @@ class AssociationProxyTest(DatabaseTestBase):
             chosen_product_images = rel(ChosenProductImage,
                                         backref=backref(name='product'),
                                         cascade="all, delete-orphan")
+            image_numbers = prox('chosen_product_images', 'number')
             chosen_images = prox('chosen_product_images', 'image',
                                  creator=lambda image:
                                      ChosenProductImage(image=image))
